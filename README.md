@@ -9,7 +9,7 @@ This application allows users to upload NEM12 format files containing energy met
 ## Features
 
 - **File Upload**: Drag-and-drop interface for uploading NEM12 files
-- **Real-time Processing**: Stream processing results as they happen
+- **Real-time Processing**: Stream processing results as they are processed
 - **SQL Statement Generation**: Convert NEM12 data into database-ready SQL statements
 
 ## Tech Stack
