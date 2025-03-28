@@ -25,12 +25,6 @@ export interface InfoEventData {
 	message: string
 }
 
-export interface ErrorEventData {
-	error: string
-}
-
-export type EventType = "statement" | "info" | "error" | "complete"
-
 const FormSchema = z.object({
 	files: z
 		.array(z.instanceof(File))
@@ -47,9 +41,9 @@ const FormSchema = z.object({
 
 function UploadForm() {
 	const [clientId] = useState(() => uuidv4())
-	const [isLoading, setIsLoading] = useState(false)
+	const [isLoading, setIsLoading] = useState<boolean>(false)
 	const [sqlStatements, setSqlStatements] = useState<string[]>([])
-	const [isProcessingComplete, setIsProcessingComplete] = useState(false)
+	const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false)
 	const [processingInfo, setProcessingInfo] = useState<string | null>(null)
 	
 	const form = useForm<z.infer<typeof FormSchema>>({
@@ -66,7 +60,7 @@ function UploadForm() {
 		
 		eventSource.addEventListener('statement', (event: MessageEvent) => {
 			try {
-				const data = JSON.parse(event.data) as StatementEventData
+				const data = JSON.parse(event.data) as StatementEventData;
 				setSqlStatements(prev => [...prev, data.sql])
 			} catch (err) {
 				console.error('Error parsing statement:', err)
@@ -75,7 +69,7 @@ function UploadForm() {
 		
 		eventSource.addEventListener('info', (event: MessageEvent) => {
 			try {
-				const data = JSON.parse(event.data) as InfoEventData
+				const data = JSON.parse(event.data) as InfoEventData;
 				setProcessingInfo(data.message)
 			} catch (err) {
 				console.error('Error parsing info:', err)
