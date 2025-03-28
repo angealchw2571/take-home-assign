@@ -177,12 +177,12 @@ async def handle_upload(
                     status_code=400, 
                     detail=f"Invalid file type for {file.filename}. Please upload CSV or TXT files only."
                 )
-            
+            # create temp files and save the original file name
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 contents = await file.read()
                 temp_file.write(contents)
                 file_infos.append((temp_file.name, file.filename))
-        
+            # TODO add antivirus check/scans 
         # Add the processing task to background tasks
         background_tasks.add_task(background_processing, client_id, file_infos)
         
