@@ -3,14 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form } from "@/components/ui/form"
 import api from "@/lib/api"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { FileWithPath, useDropzone } from "react-dropzone"
 import { useForm } from "react-hook-form"
+import { v4 as uuidv4 } from 'uuid'
 import { z } from "zod"
 import FileCard from "./FileCard"
 import UploadDropZone from "./UploadDropZone"
-import { Loader2, RefreshCw } from "lucide-react"
-import { v4 as uuidv4 } from 'uuid';
+import StatementWindow from "./StatementWindow"
 
 
 export interface FormInput {
@@ -37,7 +38,6 @@ const FormSchema = z.object({
 			{ message: "Each file must be less than or equal to 20MB" }
 		),
 })
-
 
 function UploadForm() {
 	const [clientId] = useState(() => uuidv4())
@@ -76,10 +76,18 @@ function UploadForm() {
 			}
 		})
 		
-		eventSource.addEventListener('error', () => {
+		eventSource.addEventListener('error', (event: MessageEvent) => {
 			console.error('Error processing file')
 			eventSource.close()
-			// TODO handle error message in data.error
+			
+			try {
+				// Try to parse error data if available
+				const data = JSON.parse(event.data);
+				console.error('Processing error:', data.error || 'Unknown error');
+			} catch (err) {
+				console.error('Error parsing error event data');
+			}
+			
 			setIsLoading(false)
 		})
 		
@@ -114,17 +122,28 @@ function UploadForm() {
 					formData.append("files", file)
 				})
 				
-				await api.post(`/upload/${clientId}`, formData)
-				
-				const eventSource = setupEventSource()
-				
-				return () => {
-					eventSource.close()
+				const result = await api.post(`/upload/${clientId}`, formData)
+				// TODO need to handle more status codes. Happy day scenerario now
+				if (result.status === 200) {
+					console.log("Upload successful");
+					
+					// Set up event source to listen for processing updates
+					const eventSource = setupEventSource();
+					
+					return () => {
+						eventSource.close();
+					};
+				} else{
+					console.error('Something went wrong');
 				}
+			} else {
+				// No files to upload
+				console.error('No files selected for upload');
+				setIsLoading(false);
 			}
-		} catch (err) {
-			console.error('Error uploading file:', err)
-			setIsLoading(false)
+		} catch (err: unknown) {
+			console.error('Error uploading file:', err);
+			setIsLoading(false);
 		}
 	}
 
@@ -161,6 +180,7 @@ function UploadForm() {
 	}, [acceptedFiles, form])
 
 	const files = form.watch("files")
+	
 	const handleDeleteFile = (index: number) => {
 		if (window.confirm("Are you sure you want to delete this file?")) {
 			const existingFiles = form.getValues("files") || []
@@ -217,41 +237,12 @@ function UploadForm() {
 							)}
 						</Button>
 						
-						{sqlStatements.length > 0 && (
-							<div className="mt-4">
-								<h3 className="text-lg font-semibold mb-2 flex justify-between items-center">
-									<span>{isProcessingComplete ? "Processing Complete" : "Processing Data..."}</span>
-									<Button 
-										variant="outline" 
-										size="sm" 
-										onClick={clearStatements}
-										className="text-sm"
-									>
-										<RefreshCw className="h-4 w-4 mr-1" />
-										Clear
-									</Button>
-								</h3>
-								
-								{processingInfo && (
-									<div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-3 mb-3">
-										{processingInfo}
-									</div>
-								)}
-								
-								<div className="max-h-[400px] overflow-y-auto border rounded p-4 bg-slate-50">
-									<pre className="whitespace-pre-wrap text-sm">
-										{sqlStatements.map((sql, index) => (
-											<div key={index} className="mb-1 border-b pb-1">
-												{sql}
-											</div>
-										))}
-									</pre>
-								</div>
-								<div className="text-sm text-gray-500 mt-2">
-									Generated {sqlStatements.length} SQL statements
-								</div>
-							</div>
-						)}
+						<StatementWindow 
+							sqlStatements={sqlStatements}
+							isProcessingComplete={isProcessingComplete}
+							processingInfo={processingInfo}
+							onClear={clearStatements}
+						/>
 					</CardContent>
 				</Card>
 			</form>
