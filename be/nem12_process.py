@@ -13,7 +13,7 @@ def parse_file(file_path):
             row = line.strip().split(',')
             record_type = row[0]
 
-            # skip invalid headers
+            # check if header is valid, then process
             if record_type not in valid_record_types:
                 continue
 
@@ -28,8 +28,8 @@ def parse_file(file_path):
                     continue
 
                 # Calculate number of values based on interval length
+                # 24 hours * 60 minutes aka 1440 minutes / interval length
                 intervals_per_day = int(24 * 60 / interval_length)
-
                 # extract consumption values based on interval length
                 consumption_values = row[2:(2 + intervals_per_day)]
                 for i, value in enumerate(consumption_values):
@@ -38,7 +38,7 @@ def parse_file(file_path):
                     except ValueError:
                         continue
 
-                    # Current timestamp from base_timestamp 
+                    # Calculate timestamp from base_timestamp 
                     timestamp = base_timestamp + timedelta(minutes=(int(i) + 1) * interval_length)
                     # print(timestamp)
                     sqlstatement = f"INSERT INTO meter_readings (id, nmi, timestamp, consumption) VALUES ('{uuid.uuid4()}', '{current_nmi}', '{timestamp.isoformat()}', {consumption});"
@@ -47,7 +47,7 @@ def parse_file(file_path):
 
 
 if __name__ == "__main__":
-    file_path = "nem12_sample.csv"  # Path to the test file
+    file_path = "./nem12_sample_fixed.csv" #updated with fixed sample
     
     try:
         statementcount = 0

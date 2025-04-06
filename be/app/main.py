@@ -83,7 +83,7 @@ async def process_file(file_path: str, original_filename: str):
                 row = line.strip().split(',')
                 record_type = row[0]
 
-                # skip invalid headers
+                # check if header is valid, then process
                 if record_type not in valid_record_types:
                     continue
 
@@ -98,6 +98,7 @@ async def process_file(file_path: str, original_filename: str):
                         continue
 
                     # Calculate number of values based on interval length
+                    # 24 hours * 60 minutes aka 1440 minutes / interval length
                     intervals_per_day = int(24 * 60 / interval_length)
 
                     # Extract consumption values based on interval length
